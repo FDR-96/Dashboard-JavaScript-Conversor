@@ -1,0 +1,10 @@
+head, body{
+    height: 960px;
+    width: auto;
+
+}
+
+#myChart{
+    height: 500px;
+    width: 400px;
+}

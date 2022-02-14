@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+</head>
+<body>
+
+  <style>
+    body, head{
+      background: #2C324F;
+      width: 1024px;
+      height: 920px;
+      margin: auto;
+    }
+    h1 {
+        text-align: center;
+        font-family: 'Lato', sans-serif;
+    }
+    h2 {
+        text-align: center;
+        font-family: 'Lato', sans-serif;
+        color: #E3E3E3;
+        font-size: 2.5ch;
+        font-weight: 450;
+    }
+
+    h4 {
+        text-align: center;
+        font-family: 'Lato', sans-serif;
+    }
+
+    p {
+        text-align: center;
+        font-family: 'Lato', sans-serif;
+        
+    }
+    #container-sup{
+      margin-top: 50px;
+      
+    }
+    .izquierda{
+      display: inline-flex;
+      width: 80%;
+      height: 150px;
+      border-radius: 3px;
+      background: #1F253E;
+      box-shadow: 15px 15px 30px #19191993,
+              -15px -15px 30px #29292988;
+    }
+
+    .block-dimmer{
+      text-align: center;
+      padding: 2%;
+      margin-top: 30px;
+      width: 150px;
+      height: 150px;
+      display: block;
+    }
+    .block-dimmer h2{
+      font-weight: 450;
+      color: #21D78F;
+    }
+
+    .block-vred{
+      text-align: center;
+      padding: 2%;
+      margin-top: 30px;
+      width: 150px;
+      height: 150px;
+      display: block;
+    }
+
+
+    .block-vrms{
+      text-align: center;
+      padding: 2%;
+      margin-top: 30px;
+      width: 150px;
+      height: 150px;
+      display: block;
+    }
+    p{
+      margin-top: -10px;
+      font-weight: 450;
+      color: #858AA0;
+    }
+    
+    .block-angulo{
+      text-align: center;
+      padding: 2%;
+      margin-top: 30px;
+      width: 150px;
+      height: 150px;
+      display: block;
+    }
+
+      /* From cssbuttons.io by @nikk7007 */
+.switch {
+ --false: #E81B1B;
+ --true: #009068;
+}
+
+input[type=checkbox] {
+ appearance: none;
+ height: 2rem;
+ width: 3.5rem;
+ background-color: #545b79;
+ position: relative;
+ border-radius: .2em;
+ cursor: pointer;
+}
+
+input[type=checkbox]::before {
+ content: '';
+ display: block;
+ height: 1.9em;
+ width: 1.9em;
+ transform: translate(-50%, -50%);
+ position: absolute;
+ top: 50%;
+ left: calc(1.9em/2 + .3em);
+ background-color: var(--false);
+ border-radius: .2em;
+ transition: .3s ease;
+}
+
+input[type=checkbox]:checked::before {
+ background-color: var(--true);
+ left: calc(100% - (1.9em/2 + .3em));
+}
+.block-OnOFF{
+  margin: auto;
+}
+    .chart-container {
+      margin-top: 5%;
+      width: 80%;
+      height: 400px;
+      border-radius: 3px;
+      background: #1F253E;
+      box-shadow: 15px 15px 30px #19191993,
+              -15px -15px 30px #29292988;
+    }
+    .linea{
+      background-color: #2C324F;
+      width: 2px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    #myChart{
+     
+      padding: 2%;
+
+    }
+</style>
+
+<div id="container-sup">
+  <div class="izquierda">
+      <div class="block-dimmer"><h2 class="dimmer">Activo</h2></div>
+      <div class="linea"></div>
+      <div class="block-vred"><h2 id="vred">100<span>V</span></h2><p>Tension de Red</p></div>
+      <div class="linea"></div>
+      <div class="block-vrms"><h2 id="vrms">100<span>V</span></h2><p>Tension RMS</p></div>
+      <div class="linea"></div>
+      <div class="block-angulo"><h2 id="angulo">80<span>°</span></h2><p>Angulo</p></div>
+      <div class="linea"></div>
+      <div class="block-OnOFF"><label class="switch"><input id="checkOnOff" name="checkbox" type="checkbox" checked=""></label></div></div>
+
+    </div>
+  </div>
+  <div class="derecha"></div>
+</div>
+<div  id="container-inf">
+  <div class="chart-container"><canvas id="myChart"></canvas></div>
+</div>
+
+<link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="/socket.io/socket.io.js" charset="utf-8"></script>
+
+  <script type="text/javascript">
+      const socket = io();
+
+      var numeros = [];
+      let bandera = 1;
+      let OnOff;
+      var checkbox = document.querySelector("input[name=checkbox]");
+
+      const htmlVrms = document.querySelector("#vrms");
+      const htmlRed = document.querySelector("#vred");
+      const htmlAngulo = document.querySelector("#angulo");
+      
+      var ctx = document.getElementById('myChart').getContext('2d');
+      
+      var chart = new Chart(ctx, {
+          // The type of chart we want to create
+          type: 'line',
+          
+          // The data for our dataset
+          data: {
+          labels:[],
+          datasets: [{
+              label: "Vrms",
+              borderColor: "#21BFD7",
+              data: [],
+              fill: false,
+              backgroundColor: "#21BFD7",
+              pointRadius: 1,
+              pointHoverRadius: 30,
+              lineTension:0,
+          },{
+              label: "Vred",
+              borderColor: "#E3E3E3",
+              data: [],
+              fill: false,
+              backgroundColor: "#E3E3E3",
+              pointRadius: 1,
+              pointHoverRadius: 30,
+              lineTension:0,
+          },{
+              label: "SetPoint",
+              borderColor: "#21D78F",
+              data: [],
+              fill: false,
+              backgroundColor: "#21D78F",
+              pointRadius: 1,
+              pointHoverRadius: 30,
+              lineTension:0,
+          }
+          ]
+          },
+
+          // Configuration options go here
+          options: {
+                 
+                  maintainAspectRatio: false,
+                  scales: {
+                    xAxis: {
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'muestreo'
+                            }
+                        },
+                    yAxis: {
+                            display: true,
+                            
+                            ticks: {
+                                beginAtZero: true,
+                                steps: 10,
+                                stepValue: 5,
+                                max: 200,
+                                min: 0
+                            }
+                      },
+                    
+                  }
+          }
+        
+      });
+      var contador = 0;
+      socket.on('arduino:data', function (data) { //As a temp data is received        
+           if(chart.data.labels.length != 50) { //If we have less than 15 data points in the graph
+              chart.data.labels.push(contador++);  //Add time in x-asix
+      
+              chart.data.datasets.forEach((dataset) => {
+                if(bandera == 1){
+                    dataset.data.push(parseInt(data.valueRms)); //Add temp in y-axis
+                    bandera++;
+                    htmlVrms.textContent = parseInt(data.valueRms) + 'V';
+                  }else if(bandera == 2){
+                    dataset.data.push(parseInt(data.valueRed)); //Add temp in y-axis
+                    bandera++;
+                    htmlRed.textContent = parseInt(data.valueRed) + 'V';
+                  }else if(bandera == 3){
+                    dataset.data.push(parseInt(data.valueSetPoint));
+                    bandera = 1;
+                    htmlAngulo.textContent = parseInt(data.valueSetPoint) + '°';
+                  }
+              });
+          }
+          else { //If there are already 15 data points in the graph.
+              chart.data.labels.shift(); //Remove first time data
+              chart.data.labels.push(contador++); //Insert latest time data
+              chart.data.datasets.forEach((dataset) => {
+                  dataset.data.shift(); //Remove first temp data
+                  if(bandera == 1){
+                    dataset.data.push(parseInt(data.valueRms)); //Add temp in y-axis
+                    bandera++;
+                    htmlVrms.textContent = parseInt(data.valueRms) + 'V';
+                  }else if(bandera == 2){
+                    dataset.data.push(parseInt(data.valueRed)); //Add temp in y-axis
+                    bandera++;
+                    htmlRed.textContent = parseInt(data.valueRed) + 'V';
+                  }else if(bandera == 3){
+                    dataset.data.push(parseInt(data.valueSetPoint));
+                    bandera = 1;
+                    htmlAngulo.textContent = parseInt(data.valueSetPoint) + '°';
+                  }
+
+              });
+              
+
+          }
+ 
+          chart.update(); //Update the graph.
+      });
+
+  </script>
+
+</body>
+</html>
+
