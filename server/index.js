@@ -27,6 +27,8 @@ console.log(__dirname);
 app.use(express.static(path.join(__dirname, 'public')));
 
 const SerialPort = require('serialport');
+const { on } = require('events');
+const e = require('express');
 const Readline = SerialPort.parsers.Readline;
 const parser = new Readline();
 
@@ -43,15 +45,35 @@ mySerial.on('open', function () {
 });
 
 let indice = 0;
-let key = ['$', '%', '&', '@', '*'];
-let vrms, vred, ms, setPoint, angulo;
+let key = ['$', '%', '&', '@', '*', 'o', 'x'];
+let vrms, vred, ms, setPoint, angulo, onOff;
 let estado = "o";
+
+var delayInMilliseconds = 5; //1/2 second
+
+io.on('connection', function(socket) {
+  socket.on('event', function(data) {   
+      estado = data.message;
+      mySerial.write(estado);
+      console.log('El cliente envio un mensaje por puerto serial:', data.message);
+  });
+
+  socket.on('setPoint', function(data) {   
+    let setPoint = data.valor;
+    mySerial.write("¡");
+    setTimeout(function() {
+        mySerial.write(setPoint);
+    }, delayInMilliseconds);
+    console.log('El cliente envio un mensaje por puerto serial:', data.valor);
+  });
+
+});
 
 
 mySerial.on('data', function (data) {
 
   var datos = data.toString();
-  for(i=0; i<= 5; i++){
+  for(i=0; i<= 6; i++){
       indice = datos.indexOf(key[i]);
       switch(key[i]){
         case  '$':
@@ -69,21 +91,29 @@ mySerial.on('data', function (data) {
         case  '*':
           angulo = datos.substring(indice + 1, indice + 4);
         break;
+        case  '+':
+          onOff = 1;
+        break;
+        case  '-':
+          onOff = 0;
+        break;
         
       }
   }
+ // console.log(datos);
 
-      console.log(vrms);
+/*       console.log(vrms);
       console.log(vred);
       console.log(ms);
       console.log(setPoint);
-      console.log(angulo);
+      console.log(angulo); */
   io.emit('arduino:data', {
       valueRms: vrms,
       valueRed: vred,
       valueMs: ms,
       valueSetPoint: setPoint,
-      valueAngulo: angulo
+      valueAngulo: angulo,
+      valueOnOff: onOff
   });   
 });
 
@@ -95,21 +125,3 @@ mySerial.on('err', function (data) {
 server.listen(8080, () => {
   console.log('Server on port 8080');
 });
-
-/* io.on('connection', (socket) => {
-  
-  socket.on('Encender Apagar', (OnOff) => {
-    if(OnOff)return;
-    socket.onOff = OnOff;
-    console.log(OnOff);
-  });
-  socket.on('new_message', function (data) {
-    socket.broadcast.emit('new_message', data);
-    console.log(socket.onOff+' just sent '+data);
-    });
-    socket.on('disconnect', () => {
-      --numUsers;
-      console.log(socket.username+' has left, now there are '+numUsers+' online');
-});
-
-}); */

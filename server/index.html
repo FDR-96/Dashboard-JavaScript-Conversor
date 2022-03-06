@@ -39,14 +39,23 @@
         
     }
     #container-sup{
+      width: 100%;
       margin-top: 50px;
+      display: inline-flex;
+      
+    }
+    #container-inf
+    {
+      width: 100%;
+      margin-top: 20px;
+      display: inline-flex;
       
     }
     .izquierda{
       display: inline-flex;
-      width: 80%;
+      width: 97%;
       height: 150px;
-      border-radius: 3px;
+      border-radius: 15px;
       background: #1F253E;
       box-shadow: 15px 15px 30px #19191993,
               -15px -15px 30px #29292988;
@@ -89,7 +98,7 @@
       color: #858AA0;
     }
     
-    .block-angulo{
+    .block-set-point{
       text-align: center;
       padding: 2%;
       margin-top: 30px;
@@ -137,9 +146,9 @@ input[type=checkbox]:checked::before {
 }
     .chart-container {
       margin-top: 5%;
-      width: 80%;
-      height: 400px;
-      border-radius: 3px;
+      width: 85%;
+      height: 500px;
+      border-radius: 15px;
       background: #1F253E;
       box-shadow: 15px 15px 30px #19191993,
               -15px -15px 30px #29292988;
@@ -151,6 +160,57 @@ input[type=checkbox]:checked::before {
       margin-bottom: 20px;
     }
 
+    .block-setPoint{
+      margin-left: 20px;
+      display: flexbox;
+      align-items: center;
+      align-content: center;
+      width: 10%;
+      height: 500px;
+      margin-top: 5%;
+      border-radius: 15px;
+      background: #1F253E;
+      box-shadow: 15px 15px 30px #19191993,
+              -15px -15px 30px #29292988;
+    }
+    #setPointBar{
+      width: 120px;
+      height: 20px;
+      padding: 0%;
+      margin-left: -6px;
+      margin-top: 100px;
+      position: absolute;
+      color: -internal-light-dark(#ce7a7a, rgb(255, 255, 255));
+       transform: rotate(-90deg);
+    }
+    #setPointInput{
+      width: 40px;
+      height: 15px;
+      padding: 0%;
+      margin-left: 40px;
+      font-size: medium;
+      font-weight: 500;
+      margin-top: 400px;
+      position: absolute;
+      color:white;
+      background-color: #1F253E;
+      border-style: none;
+    }
+    #buttonSet{
+      width: 70px;
+      height: 30px;
+      padding: 0%;
+      margin-left: 15px;
+      margin-top: 450px;
+      position: absolute;
+      background-color: #858AA0;
+      border-style: none;
+      border-radius: 10px;
+      color: white;
+    }
+    #buttonSet:hover{
+      background-color: #19191993;
+    }
     #myChart{
      
       padding: 2%;
@@ -160,22 +220,30 @@ input[type=checkbox]:checked::before {
 
 <div id="container-sup">
   <div class="izquierda">
-      <div class="block-dimmer"><h2 class="dimmer">Activo</h2></div>
-      <div class="linea"></div>
+    
       <div class="block-vred"><h2 id="vred">100<span>V</span></h2><p>Tension de Red</p></div>
       <div class="linea"></div>
       <div class="block-vrms"><h2 id="vrms">100<span>V</span></h2><p>Tension RMS</p></div>
       <div class="linea"></div>
-      <div class="block-angulo"><h2 id="angulo">80<span>°</span></h2><p>Angulo</p></div>
+      <div class="block-set-point"><h2 id="set-point">100<span>V</span></h2><p>Set Point</p></div>
       <div class="linea"></div>
-      <div class="block-OnOFF"><label class="switch"><input id="checkOnOff" name="checkbox" type="checkbox" checked=""></label></div></div>
-
-    </div>
+      <div class="block-set-point"><h2 id="angulo">80<span>°</span></h2><p>Angulo</p></div>
+      <div class="linea"></div>
+      <div class="block-OnOFF"><label class="switch"><input id="checkOnOff" name="checkbox" type="checkbox" checked=""></label></div>
   </div>
-  <div class="derecha"></div>
+  
+
 </div>
 <div  id="container-inf">
   <div class="chart-container"><canvas id="myChart"></canvas></div>
+  <div class="block-setPoint">
+    <div><input id="setPointBar"type="range" min="53" max="250" value="53" /></div>
+    <form>
+      <input id="setPointInput" type="number" value="53" />
+      <button id="buttonSet" type="button" >Setear</button>
+    </form>
+  
+  </div>
 </div>
 
 <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
@@ -189,13 +257,39 @@ input[type=checkbox]:checked::before {
 
       var numeros = [];
       let bandera = 1;
-      let OnOff;
-      var checkbox = document.querySelector("input[name=checkbox]");
+      var mensaje = " ";
+
+      function OnOff(){
+        if(this.checked){
+              mensaje = "o";
+            console.log(mensaje)
+            socket.emit('event', { message:  mensaje});
+        }else{
+          mensaje = "x";
+          console.log(mensaje)
+          socket.emit('event', { message:  mensaje});
+        }
+        
+      }
+
+      function SetPoint(){
+        let setPoint = this.value;
+        socket.emit('setPoint', { valor:  setPoint});
+      }
+      function SetPoint2(){
+        let setPoint = document.getElementById("setPointInput").value;
+        socket.emit('setPoint', { valor:  setPoint});
+      }
 
       const htmlVrms = document.querySelector("#vrms");
       const htmlRed = document.querySelector("#vred");
+      const htmlsetPoint = document.querySelector("#set-point");
+      const htmlMs = document.querySelector("#ms");
       const htmlAngulo = document.querySelector("#angulo");
-      
+      const htmlValorSetPoint = document.querySelector("#setPointInput");
+      const htmlOnOff = document.querySelector(".dimmer");
+
+
       var ctx = document.getElementById('myChart').getContext('2d');
       
       var chart = new Chart(ctx, {
@@ -238,29 +332,9 @@ input[type=checkbox]:checked::before {
 
           // Configuration options go here
           options: {
-                 
-                  maintainAspectRatio: false,
-                  scales: {
-                    xAxis: {
-                            display: true,
-                            scaleLabel: {
-                                display: true,
-                                labelString: 'muestreo'
-                            }
-                        },
-                    yAxis: {
-                            display: true,
-                            
-                            ticks: {
-                                beginAtZero: true,
-                                steps: 10,
-                                stepValue: 5,
-                                max: 200,
-                                min: 0
-                            }
-                      },
+                
                     
-                  }
+             
           }
         
       });
@@ -281,7 +355,7 @@ input[type=checkbox]:checked::before {
                   }else if(bandera == 3){
                     dataset.data.push(parseInt(data.valueSetPoint));
                     bandera = 1;
-                    htmlAngulo.textContent = parseInt(data.valueSetPoint) + '°';
+                 //   htmlAngulo.textContent = parseInt(data.valueSetPoint) + '°';
                   }
               });
           }
@@ -301,17 +375,27 @@ input[type=checkbox]:checked::before {
                   }else if(bandera == 3){
                     dataset.data.push(parseInt(data.valueSetPoint));
                     bandera = 1;
-                    htmlAngulo.textContent = parseInt(data.valueSetPoint) + '°';
+                  //  htmlAngulo.textContent = parseInt(data.valueSetPoint) + '°';
                   }
 
-              });
-              
+              }); 
 
+           
+              
           }
- 
+
+          htmlAngulo.textContent = parseInt(data.valueAngulo) + '°';
+          htmlsetPoint.textContent = parseInt(data.valueSetPoint) + 'Vrms';
           chart.update(); //Update the graph.
       });
+      var checkbox = document.querySelector('#checkOnOff');
+      checkbox.addEventListener('change', OnOff);
 
+      var htmlSetPoint = document.querySelector("#setPointBar");
+      htmlSetPoint.addEventListener('change', SetPoint);
+
+      var htmlSetPointButton = document.querySelector("#buttonSet");
+      htmlSetPointButton.addEventListener('click', SetPoint2);
   </script>
 
 </body>
